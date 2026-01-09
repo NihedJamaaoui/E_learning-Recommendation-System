@@ -215,20 +215,6 @@ This is a student project demonstrating RAG + LLM + Multi-Agent systems.
 
 ---
 
-## Contact
-
-Built by [Your Name]  
-LinkedIn: [Your LinkedIn]  
-GitHub: [Your GitHub]
-
----
-
-## License
-
-MIT License - Feel free to use for educational purposes
-
----
-
 ## Acknowledgments
 
 - **n8n** - For the incredible workflow automation platform
