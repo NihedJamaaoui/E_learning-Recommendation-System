@@ -1,0 +1,592 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -240,
+        688
+      ],
+      "id": "c78f9513-6523-470d-85ed-7e0a0adeccf9",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "s3uFh8jyifkw2EaN",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        944,
+        704
+      ],
+      "id": "033f4bb2-54a4-4e5d-9a11-d7ad8e028bac",
+      "name": "OpenRouter Chat Model1",
+      "credentials": {
+        "openRouterApi": {
+          "id": "s3uFh8jyifkw2EaN",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openai/gpt-oss-120b",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        2000,
+        592
+      ],
+      "id": "65fc5807-2cf0-4748-924b-e3c4adaa5b16",
+      "name": "OpenRouter Chat Model2",
+      "credentials": {
+        "openRouterApi": {
+          "id": "s3uFh8jyifkw2EaN",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1536,
+        400
+      ],
+      "id": "abc9857f-97b4-4f42-b950-a98fa5af6d77",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\n\nreturn {\n  json: {\n    learner_id: data.learner_id,\n\n    course_profiles: data.course_profiles,\n    strengths: data.strengths,\n    weaknesses: data.weaknesses,\n\n    generated_content: data.generated_content\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1744,
+        400
+      ],
+      "id": "6f97cda9-db39-412e-8421-f6d2daf4faf9",
+      "name": "Flatten Merged Data"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a Learner Profiling Agent (LPA).\n\nYour task is to analyze the learner’s profile and generate a structured learning profile\nthat will be used by downstream agents to generate quizzes and learning resources.\n\nRules:\n- For each course:\n  • Score < 40 → knowledge_level = \"beginner\"\n  • Score 40–79 → knowledge_level = \"intermediate\"\n  • Score ≥ 80 → knowledge_level = \"advanced\"\n- Identify strengths as courses with high performance (score ≥ 80).\n- Identify weaknesses as courses with low performance (score < 40).\n- Do NOT generate quizzes or learning resources.\n\nInput Data:\n- Learner ID: {{ $json.learner_id }}\n- Past courses: {{ $json.past_courses }}\n- Quiz scores (same order as courses): {{ $json.quiz_scores }}\n\nOutput:\n{\n   \"learner_id\": \"{{ $json.learner_id }}\",\n  \"course_profiles\": [\n    {\n      \"course_name\": \"\",\n      \"quiz_score\": 0,\n      \"knowledge_level\": \"\",\n      \"recommended_quiz_difficulty\": \"\"\n    }\n  ],\n  \"strengths\": [],\n  \"weaknesses\": []\n}\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -240,
+        544
+      ],
+      "id": "645c03ff-a0d5-4a56-844d-dc8201d4477d",
+      "name": "Leaner Profiling Agent"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the raw output\nlet rawOutput = $input.first().json.output;\n\n// Remove markdown code blocks\nrawOutput = rawOutput.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n\n// Parse the JSON\nlet parsedData;\ntry {\n  parsedData = JSON.parse(rawOutput);\n} catch (error) {\n  return {\n    json: {\n      error: \"Failed to parse JSON\",\n      message: error.message,\n      raw_preview: rawOutput.substring(0, 500)\n    }\n  };\n}\n\nreturn {\n  json: parsedData\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        112,
+        384
+      ],
+      "id": "fcc2ebd6-60cf-4cab-a20e-0e1e2db85757",
+      "name": "Parse Learner Profile"
+    },
+    {
+      "parameters": {
+        "jsCode": "return {\n  json: JSON.parse($input.first().json.output)\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1296,
+        544
+      ],
+      "id": "73513d45-73a8-4122-84b7-76273b19219e",
+      "name": "Parse Generated Content"
+    },
+    {
+      "parameters": {
+        "jsCode": "return {\n  json: JSON.parse($input.first().json.output)\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2352,
+        272
+      ],
+      "id": "d7df7fb6-7938-4dfd-b548-0eb83e91c533",
+      "name": "Parse Final Content"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a Quiz Ranking Agent.\n\nYou will receive a learner profile with generated quizzes grouped by course.\n\nYour task:\nFor EACH course, select the single best quiz.\n\nSelection criteria (in priority order):\n1. Match the learner's knowledge_level for the course\n2. Match the recommended_quiz_difficulty\n3. Prefer quizzes that help address learner weaknesses\n4. Prefer quizzes that test core concepts over trivial ones\n\nIMPORTANT RULES:\n- Select EXACTLY ONE quiz per course\n- Do NOT modify quiz questions or options\n- Do NOT rank or filter resources\n- Attach resources exactly as provided\n- For each question in the selected quiz, add the correct_answer field with the correct answer\n- For each question in the selected quiz, add the justification field with a brief explanation of why that answer is correct\n- Do NOT include explanations, reasoning, or scores about quiz selection\n- Output MUST be valid JSON\n- Do NOT use markdown or code blocks\n\nINPUT DATA:\n\nLearner ID: {{ $json.learner_id }}\n\nLearner Strengths:\n{{ JSON.stringify($json.strengths) }}\n\nLearner Weaknesses:\n{{ JSON.stringify($json.weaknesses) }}\n\nCourse Profiles:\n{{ JSON.stringify($json.course_profiles, null, 2) }}\n\nGenerated Content:\n{{ JSON.stringify($json.generated_content, null, 2) }}\n\nOUTPUT FORMAT (STRICT):\n{\n  \"learner_id\": \"string\",\n  \"recommended_quizzes\": [\n    {\n      \"course_name\": \"string\",\n      \"selected_quiz\": {\n        \"quiz_id\": \"string\",\n        \"questions\": [\n          {\n            \"question\": \"string\",\n            \"options\": [\"option1\", \"option2\", \"option3\", \"option4\"],\n            \"correct_answer\": \"string\",\n            \"justification\": \"string explaining why this answer is correct\"\n          }\n        ]\n      },\n      \"resources\": {\n        \"websites\": [ ... ],\n        \"youtube_videos\": [ ... ]\n      }\n    }\n  ]\n}\n\nReturn the result now.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2000,
+        400
+      ],
+      "id": "e6af6da3-f05d-4d47-b33b-440d8931b8fc",
+      "name": "Quiz Ranking Agent"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a Generative Content Agent (GCA).\nYour role:\nGenerate adaptive learning content for a learner based on course-level performance.\n\nINPUT DATA:\nYou are given:\n- A learner_id\n- A list of course_profiles, each containing:\n  - course_name\n  - knowledge_level\n  - recommended_quiz_difficulty\n- A list of learner weaknesses (course names)\n\nTASKS:\nFor EACH course in course_profiles:\n1. Generate between 5 and 10 quizzes adapted to:\n   - The course_name\n   - The recommended_quiz_difficulty\n2. Each quiz must:\n   - Contain 3 to 5 multiple-choice questions\n   - Focus on core concepts of the course\n   - Be concise and suitable for micro-learning\n   - Each question MUST have 4 complete answer options with full text, not just letters\n\nFOR EACH course listed in learner weaknesses:\n3. Generate learning resources including:\n   - 1 website or online course link\n   - 1 YouTube video link\n4. Resources must be beginner-friendly and directly related to the course topic.\n\nSTRICT RULES (MANDATORY):\n- Do NOT include explanations outside the requested content\n- Do NOT include markdown, backticks, or code blocks\n- Do NOT invent learner data\n- Keep quiz questions short and clear\n- Each option MUST contain the full answer text, not just \"A\", \"B\", \"C\", \"D\"\n- Generate ONLY what is requested\n\nOUTPUT FORMAT (JSON ONLY):\n{\n  \"learner_id\": \"string\",\n  \"generated_content\": [\n    {\n      \"course_name\": \"string\",\n      \"quiz_difficulty\": \"easy | medium | hard\",\n      \"quizzes\": [\n        {\n          \"quiz_id\": \"string\",\n          \"questions\": [\n            {\n              \"question\": \"string\",\n              \"options\": [\n                \"Full text of option A\",\n                \"Full text of option B\",\n                \"Full text of option C\",\n                \"Full text of option D\"\n              ]\n            }\n          ]\n        }\n      ],\n      \"resources\": {\n        \"websites\": [\"url\"],\n        \"youtube_videos\": [\"url\"]\n      }\n    }\n  ]\n}\n\nEXAMPLE of correct question format:\n{\n  \"question\": \"What is a variable in Python?\",\n  \"options\": [\n    \"A container for storing data values\",\n    \"A type of loop\",\n    \"A mathematical operator\",\n    \"A file format\"\n  ]\n}\n\nINPUT:\nLearner ID: {{ $json.learner_id }}\nCourse profiles: {{ JSON.stringify($json.course_profiles) }}\n**RETRIEVED COURSE MATERIALS (BASE ALL QUIZZES ON THESE):**\n{{ JSON.stringify($json.retrieved_materials) }}\n\nCRITICAL: You must create quiz questions based on the RETRIEVED COURSE MATERIALS above, not from general knowledge. Each quiz must reflect the specific content provided for the course and knowledge level.\nWeaknesses: {{ JSON.stringify($json.weaknesses) }}\n\nGenerate the content now.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        928,
+        544
+      ],
+      "id": "72c3345e-a748-4590-aa80-e38239469f91",
+      "name": "Generative/Recommendation Content Agent"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are an Explainability Agent (EA).\nYour role: Generate clear, encouraging explanations for why specific quizzes and resources were recommended to the learner.\n\nINPUT DATA:\n- learner_id\n- recommended_quizzes (one per course with selected quiz and resources)\n- Original course_profiles (with scores and knowledge levels)\n- strengths and weaknesses\n\nYOUR TASK:\nFor EACH recommended quiz, generate a friendly explanation that includes:\n1. Why this difficulty level was chosen (based on their score/knowledge level)\n2. What skills this quiz will help them practice\n3. How the resources can help if they struggle (for weakness areas)\n4. Positive reinforcement for their strengths\n\nRULES:\n- Keep explanations concise (2-3 sentences per course)\n- Use encouraging, supportive tone\n- Be specific about their performance\n- Do NOT include markdown or code blocks\n- Output valid JSON only\n\nINPUT:\nLearner ID: {{ $json.learner_id }}\nRecommended Quizzes: {{ JSON.stringify($json.recommended_quizzes, null, 2) }}\nCourse Profiles: {{ JSON.stringify($json.course_profiles, null, 2) }}\nStrengths: {{ JSON.stringify($json.strengths) }}\nWeaknesses: {{ JSON.stringify($json.weaknesses) }}\n\nOUTPUT FORMAT (JSON ONLY):\n{\n  \"learner_id\": \"string\",\n  \"explanations\": [\n    {\n      \"course_name\": \"string\",\n      \"explanation\": \"string (why this quiz/difficulty was chosen)\",\n      \"learning_tip\": \"string (encouragement or study suggestion)\"\n    }\n  ]\n}\n\nGenerate explanations now.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        2576,
+        400
+      ],
+      "id": "6c2a6590-a132-4e9a-85a8-b338430d5999",
+      "name": "Explainability Agent"
+    },
+    {
+      "parameters": {
+        "options": {
+          "maxTokens": 2000
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        2576,
+        592
+      ],
+      "id": "2a5a6a5e-d862-4caf-882a-25e97d707568",
+      "name": "OpenRouter Chat Model3",
+      "credentials": {
+        "openRouterApi": {
+          "id": "s3uFh8jyifkw2EaN",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combineBy": "combineByPosition",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        3088,
+        288
+      ],
+      "id": "ed5492c1-ee3b-4fb6-b30e-b4b2064adc6e",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "jsCode": "return {\n  json: JSON.parse($input.first().json.output)\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2928,
+        400
+      ],
+      "id": "d35e5955-790b-488c-bf2d-9dc4547b1d3d",
+      "name": "Parse EA Content"
+    },
+    {
+      "parameters": {
+        "jsCode": "const quizData = $input.first().json;\nconst explanationData = $input.last().json;\n\nreturn {\n  json: {\n    learner_id: quizData.learner_id,\n    recommended_quizzes: quizData.recommended_quizzes,\n    explanations: explanationData.explanations\n  }\n};\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3280,
+        288
+      ],
+      "id": "8cd77f01-abc0-4814-8d04-6cd80879aa01",
+      "name": "Flatten Merged Data1"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "Recommendation",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -720,
+        544
+      ],
+      "id": "a774b0b5-5cfe-41a6-a041-2cbfea46ce27",
+      "name": "Webhook1",
+      "webhookId": "2a73e517-de27-414c-8686-0f5777cd2d7b"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "0e7160d7-7417-4b8c-ac16-1b9391e1772b",
+              "name": "learner_id",
+              "value": "={{$json.body.learner_id}}",
+              "type": "string"
+            },
+            {
+              "id": "229334e9-7ca8-4362-a221-2c7fb1f7fe69",
+              "name": "past_courses",
+              "value": "={{$json.body.past_courses}}",
+              "type": "array"
+            },
+            {
+              "id": "8c414d3b-d54b-46f3-9331-fdff97dad8ae",
+              "name": "quiz_scores",
+              "value": "={{$json.body.quiz_scores}}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -512,
+        544
+      ],
+      "id": "5c5148f7-6eb2-44b0-9b96-3fc3ea226644",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        3696,
+        288
+      ],
+      "id": "135bfcf7-4d15-4063-9364-7ea3fe891973",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "return {\n  json: {\n    learner_id: $json.learner_id ?? \"UNKNOWN\",\n    recommended_quizzes: $json.recommended_quizzes ?? [],\n    explanations: $json.explanations ?? []\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3488,
+        288
+      ],
+      "id": "ce8e7c2b-4a07-490c-8f9a-65a494fca333",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Course Knowledge Base - Your RAG Database\nconst courseDatabase = {\n  \"SQL\": {\n    \"beginner\": [\n      \"SELECT statement retrieves data from database tables. Basic syntax: SELECT column1, column2 FROM table_name\",\n      \"WHERE clause filters query results based on conditions. Example: SELECT * FROM users WHERE age > 18\",\n      \"INSERT statement adds new records to tables. Syntax: INSERT INTO table (col1, col2) VALUES (val1, val2)\",\n      \"UPDATE modifies existing records. Syntax: UPDATE table SET col1=val1 WHERE condition\",\n      \"DELETE removes records from tables. Syntax: DELETE FROM table WHERE condition\"\n    ],\n    \"intermediate\": [\n      \"JOIN combines data from multiple tables using related columns. Types: INNER, LEFT, RIGHT, FULL OUTER JOIN\",\n      \"GROUP BY aggregates rows that have same values. Used with COUNT, SUM, AVG, MAX, MIN functions\",\n      \"HAVING filters grouped results (use after GROUP BY). WHERE filters before grouping\",\n      \"Subqueries are nested SELECT statements used for complex filtering and calculations\",\n      \"UNION combines result sets from multiple queries. UNION ALL includes duplicates\"\n    ],\n    \"advanced\": [\n      \"Window functions perform calculations across table rows related to current row (ROW_NUMBER, RANK, DENSE_RANK, PARTITION BY)\",\n      \"CTEs (Common Table Expressions) using WITH clause create temporary named result sets for complex queries\",\n      \"Query optimization techniques: using proper indexes, avoiding SELECT *, analyzing execution plans, preventing N+1 queries\",\n      \"Transactions ensure data integrity with ACID properties. Use BEGIN, COMMIT, ROLLBACK for transaction control\",\n      \"Stored procedures are precompiled SQL code blocks that accept parameters and can be reused\"\n    ]\n  },\n  \n  \"Python\": {\n    \"beginner\": [\n      \"Variables store values without declaration. Example: x = 5, name = 'John'. Python is dynamically typed\",\n      \"Data types include: int (integers), float (decimals), str (strings), bool (True/False), list, dict, tuple\",\n      \"Functions are defined with def keyword. Example: def greet(name): return f'Hello {name}'\",\n      \"Loops: for loop iterates over sequences (for i in range(10)), while loop repeats while condition is true\",\n      \"Conditional statements: if/elif/else control program flow based on conditions\"\n    ],\n    \"intermediate\": [\n      \"List comprehensions provide concise way to create lists: [x*2 for x in range(10) if x % 2 == 0]\",\n      \"Classes define objects with attributes and methods. __init__ is constructor: class Dog: def __init__(self, name): self.name = name\",\n      \"Exception handling with try/except blocks manages errors gracefully. Use finally for cleanup code\",\n      \"File operations: open('file.txt', 'r') for reading, 'w' for writing, 'a' for appending. Use with statement for automatic closing\",\n      \"Modules organize code into reusable files. Import with: import module or from module import function\"\n    ],\n    \"advanced\": [\n      \"Decorators modify function behavior without changing code. Example: @property, @staticmethod, @classmethod, or custom decorators\",\n      \"Generators use yield keyword for memory-efficient iteration over large datasets. Lazy evaluation saves memory\",\n      \"Async/await for concurrent programming with asyncio library. Enables non-blocking I/O operations\",\n      \"Context managers using with statement and __enter__/__exit__ methods manage resources properly\",\n      \"Metaclasses are classes of classes that control class creation. type() is the default metaclass\"\n    ]\n  },\n  \n  \"JavaScript\": {\n    \"beginner\": [\n      \"Variables: let (block scope), const (immutable reference), var (function scope - avoid in modern JS)\",\n      \"Data types: number, string, boolean, null, undefined, object, symbol, bigint\",\n      \"Arrays store ordered lists: let arr = [1,2,3]. Methods: push(), pop(), shift(), unshift(), splice()\",\n      \"Functions: function name() {} or arrow functions: const name = () => {}. Arrow functions don't bind 'this'\",\n      \"Objects store key-value pairs: let obj = {name: 'John', age: 30}. Access with dot or bracket notation\"\n    ],\n    \"intermediate\": [\n      \"Array methods: map() transforms, filter() selects, reduce() accumulates, forEach() iterates\",\n      \"Promises handle async operations. States: pending, fulfilled, rejected. Use .then()/.catch() or async/await\",\n      \"ES6+ features: destructuring {name, age} = obj, spread operator [...arr], template literals `${var}`\",\n      \"DOM manipulation: document.querySelector(), addEventListener(), createElement(), appendChild()\",\n      \"JSON: JSON.stringify() converts objects to strings, JSON.parse() converts strings to objects\"\n    ],\n    \"advanced\": [\n      \"Closures: functions retain access to outer scope variables even after outer function returns\",\n      \"Event loop: call stack executes code, callback queue holds callbacks, microtask queue for promises. Event loop coordinates\",\n      \"Prototypal inheritance: objects inherit from other objects. __proto__ chain, Object.create(), class syntax is syntactic sugar\",\n      \"Module systems: ES6 modules (import/export), CommonJS (require/module.exports) for Node.js\",\n      \"Design patterns: singleton, factory, observer, module pattern for structuring scalable applications\"\n    ]\n  },\n  \n  \"Java\": {\n    \"beginner\": [\n      \"Java is object-oriented, statically typed. Every application needs a main method: public static void main(String[] args)\",\n      \"Variables must be declared with type: int x = 5; String name = 'John'; boolean flag = true;\",\n      \"Classes define objects with fields and methods. Use 'new' keyword to create instances\",\n      \"Control structures: if/else, switch/case, for loop, while loop, do-while loop\",\n      \"Arrays: fixed-size containers. Declare: int[] arr = new int[5]; or int[] arr = {1,2,3,4,5};\"\n    ],\n    \"intermediate\": [\n      \"Inheritance: class Child extends Parent. Subclasses inherit fields and methods from superclass\",\n      \"Interfaces define contracts that classes must implement. Use 'implements' keyword\",\n      \"Exception handling: try/catch/finally blocks. Throw exceptions with 'throw', declare with 'throws'\",\n      \"Collections Framework: List, Set, Map interfaces. ArrayList, HashSet, HashMap implementations\",\n      \"Generics provide type safety: List<String> list = new ArrayList<>();\"\n    ],\n    \"advanced\": [\n      \"Multithreading: Thread class, Runnable interface, synchronized keyword, ExecutorService for thread pools\",\n      \"Streams API: functional-style operations on collections. map(), filter(), reduce(), collect()\",\n      \"Lambda expressions: (parameters) -> expression. Enable functional programming in Java\",\n      \"Reflection: examine and modify class structure at runtime. Class.forName(), getDeclaredMethods()\",\n      \"JVM internals: memory management, garbage collection (G1GC, ZGC), JIT compilation\"\n    ]\n  },\n  \n  \"C++\": {\n    \"beginner\": [\n      \"C++ adds OOP to C. Compile-time type checking, manual memory management with new/delete\",\n      \"Variables: int x = 5; double y = 3.14; char c = 'A'; string s = 'hello'; bool flag = true;\",\n      \"Functions: return_type name(parameters) { body }. Function overloading allowed\",\n      \"Pointers store memory addresses: int* ptr = &variable; dereference with *ptr\",\n      \"References are aliases: int& ref = variable; references cannot be null or reassigned\"\n    ],\n    \"intermediate\": [\n      \"Classes and objects: class Name { private: int data; public: void method(); }; Access specifiers: public, private, protected\",\n      \"Constructor/destructor: Constructor initializes object, destructor cleans up. ~ClassName() is destructor\",\n      \"Operator overloading: customize behavior of operators for custom types\",\n      \"Inheritance: class Derived : public Base {}. Support single and multiple inheritance\",\n      \"STL containers: vector (dynamic array), list (linked list), map (key-value), set (unique elements)\"\n    ],\n    \"advanced\": [\n      \"Templates: generic programming with template<typename T>. Function and class templates\",\n      \"Smart pointers: unique_ptr (exclusive ownership), shared_ptr (reference counting), weak_ptr (non-owning)\",\n      \"Move semantics: rvalue references &&, std::move(), perfect forwarding for efficient resource transfer\",\n      \"RAII: Resource Acquisition Is Initialization. Constructor acquires resource, destructor releases it\",\n      \"Concurrency: std::thread, std::mutex, std::lock_guard, atomic operations, std::async\"\n    ]\n  }\n};\n\n// Get learner data from previous node\nconst learnerData = $input.first().json;\nconst courseProfiles = learnerData.course_profiles || [];\n\n// Retrieve relevant materials for each course based on knowledge level\nconst retrievedMaterials = courseProfiles.map(course => {\n  const courseName = course.course_name;\n  const knowledgeLevel = course.knowledge_level;\n  \n  // Get materials from knowledge base\n  const materials = courseDatabase[courseName]?.[knowledgeLevel] || \n                   [`No specific materials found for ${courseName} at ${knowledgeLevel} level. Using general knowledge.`];\n  \n  return {\n    course_name: courseName,\n    knowledge_level: knowledgeLevel,\n    quiz_score: course.quiz_score,\n    materials: materials.join(\"\\n\\n\")\n  };\n});\n\n// Return enhanced data with retrieved materials\nreturn {\n  json: {\n    learner_id: learnerData.learner_id,\n    course_profiles: learnerData.course_profiles,\n    strengths: learnerData.strengths,\n    weaknesses: learnerData.weaknesses,\n    retrieved_materials: retrievedMaterials\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        352,
+        544
+      ],
+      "id": "ec39c938-ac38-471d-911e-0831c6ad03c0",
+      "name": "Retrieve Course Materials (RAG)"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Leaner Profiling Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Generative/Recommendation Content Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Quiz Ranking Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Flatten Merged Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Flatten Merged Data": {
+      "main": [
+        [
+          {
+            "node": "Quiz Ranking Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Leaner Profiling Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse Learner Profile",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Learner Profile": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Retrieve Course Materials (RAG)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Generated Content": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Quiz Ranking Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse Final Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generative/Recommendation Content Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse Generated Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse Final Content": {
+      "main": [
+        [
+          {
+            "node": "Explainability Agent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model3": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Explainability Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Explainability Agent": {
+      "main": [
+        [
+          {
+            "node": "Parse EA Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse EA Content": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Flatten Merged Data1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Flatten Merged Data1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Leaner Profiling Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retrieve Course Materials (RAG)": {
+      "main": [
+        [
+          {
+            "node": "Generative/Recommendation Content Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "5f8b0a20-95ba-4fc2-b53c-16bd61fffe2a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "c5397681e7a60787169ed38d6b7842d07232f29ce502588c33339e79d44755a9"
+  },
+  "id": "YqBzmWYUp85GNBan",
+  "tags": []
+}
